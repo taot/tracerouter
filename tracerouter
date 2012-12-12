@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+
+require "net/http"
+require "uri"
+
+def main
+  IO.popen(["traceroute"] + ARGV) do |io|
+    line = io.gets
+    while line != nil do
+      line = line.chop
+      ip = parseIp(line)
+      info = if ip == nil then "" else lookupIp(ip) end
+      puts line + " " + info
+      line = io.gets
+    end
+  end
+end
+
+def parseIp(line)
+  pattern = /\((\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\)/
+  if (pattern =~ line) != nil then
+    $1
+  else
+    nil
+  end
+end
+
+def lookupIp(ip)
+  uri = URI.parse("http://int.dpool.sina.com.cn/iplookup/iplookup.php?format=xml&ip=" + ip)
+  response = Net::HTTP.get_response(uri)
+  response.body.force_encoding('GBK').encode('UTF-8').split("\t").join(" ")
+end
+
+main
